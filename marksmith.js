@@ -9,9 +9,12 @@
 var http = require('http');
 var express = require('express');
 var marked = require('marked');
+var argh = require('argh');
 
 // ----------------------------------------------------------------------------
 // some setup
+
+var args = argh.argv;
 
 // express
 var app = express();
@@ -28,8 +31,8 @@ marked.setOptions({
 });
 
 // incoming args: $ node app.js <directory> <port>
-var baseDir = process.argv[2].replace(/\/$/, '');
-var port    = process.argv[3] || 3000;
+var baseDir = args.dir.replace(/\/$/, '');
+var port    = args.port;
 
 // generate the other paths we need
 var staticDir = baseDir + '/public';
