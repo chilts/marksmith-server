@@ -52,31 +52,42 @@ marksmith(contentDir, function(err, pages) {
     // see if this is a page we know about
     app.use(function(req, res, next) {
         console.log('url=' + req.path);
-        if ( pages[req.path] ) {
-            var page = pages[req.path];
-            if ( page.meta.type === 'post' ) {
-                return res.render('post', { meta : page.meta, content : page.content });
+
+        var path = req.path;
+        if ( path.match(/\/index$/) ) {
+            path = path.replace(/\/index$/, '/');
+        }
+
+        console.log('path=' + path);
+
+        if ( pages[path] ) {
+            var page = pages[path];
+            if ( !page.content ) {
+                page.content = '';
+            }
+
+            // if this is a redirect
+            if ( page.meta.type === 'redirect' ) {
+                return res.redirect(page.meta.to);
+            }
+
+            // content: index and page
+            if ( page.meta.type === 'index' ) {
+                return res.render('index', page);
             }
             if ( page.meta.type === 'page' ) {
-                return res.render('page', { meta : page.meta, content : page.content });
+                return res.render('page', page);
             }
-            if ( page.meta.type === 'index' ) {
-                return res.render('index', { meta : page.meta, content : page.content });
+
+            // blog: index and post
+            if ( page.meta.type === 'blog' ) {
+                return res.render('blog', page);
+            }
+            if ( page.meta.type === 'post' ) {
+                return res.render('post', page);
             }
         }
         next();
-    });
-
-    // specific routes
-    app.get('/', function(req, res) {
-        res.set('Content-Type', 'text/plain');
-        res.send('Hello, World!');
-    });
-
-    // specific routes
-    app.get('/', function(req, res) {
-        res.set('Content-Type', 'text/plain');
-        res.send('Hello, World!');
     });
 
     app.use(app.router);
