@@ -1,10 +1,41 @@
 {
     "name" : "marksmith-server",
-    "description" : "Web server to serve up markdown+assets+templates to your kindred souls.",
+    "description" : "Web server to serve up (markdown+assets+templates) -> (site+feeds) to your readers.",
+    "version" : "0.1.0",
 
+    "bin": "bin/marksmith-server.js",
+    "main" : "lib/marksmith.js",
+    "devDependencies" : {
+        "tap" : "0.4.x"
+    },
+    "scripts" : {
+        "test" : "tap test/*.js"
+    },
     "dependencies": {
         "express": "~3.2.0",
         "marked": "~0.2.8",
-        "fmt": "~0.4.0",
-    }
+        "argh": "~0.0.0",
+        "fmt": "~0.4.0"
+    },
+
+    "homepage" : "https://chilts.org/",
+    "repository" : {
+        "type" : "git",
+        "url" : "git://github.com/chilts/marksmith-server.git"
+    },
+    "bugs" : {
+        "url" : "http://github.com/chilts/marksmith-server/issues",
+        "mail" : "andychilton@gmail.com"
+    },
+
+    "author" : {
+        "name" : "Andrew Chilton",
+        "email" : "andychilton@gmail.com",
+        "url" : "http://chilts.org/"
+    },
+    "license": {
+        "type": "MIT",
+        "url": "http://chilts.mit-license.org/2013/"
+     },
+    "keywords" : [ "static-server", "server", "markdown", "markup", "html" ]
 }
