@@ -38,9 +38,7 @@ something like [CSS Minifier](http://cssminifier.com/) and [JavaScript Minifier]
 
 # Author #
 
-Written by [Andrew Chilton](http://chilts.org/)
-- [Blog](http://chilts.org/blog/)
-- [Twitter](https://twitter.com/andychilton).
+Written by [Andrew Chilton](http://chilts.org/) - [Blog](http://chilts.org/blog/) - [Twitter](https://twitter.com/andychilton).
 
 # License #
 
