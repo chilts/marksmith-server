@@ -6,79 +6,87 @@
 //
 // ----------------------------------------------------------------------------
 
+// core
 var http = require('http');
-var express = require('express');
-var marked = require('marked');
+
+// npm
 var argh = require('argh');
+var express = require('express');
+
+// local
+var marksmith = require('./lib/marksmith.js');
 
 // ----------------------------------------------------------------------------
 // some setup
 
 var args = argh.argv;
 
-// express
-var app = express();
-
-// marked
-marked.setOptions({
-    gfm        : true,
-    tables     : true,
-    breaks     : false,
-    pedantic   : false,
-    sanitize   : true,
-    smartLists : true,
-    langPrefix : 'language-',
-});
-
 // incoming args: $ node app.js <directory> <port>
-var baseDir = args.dir.replace(/\/$/, '');
+var siteDir = args.dir.replace(/\/$/, '');
 var port    = args.port;
 
 // generate the other paths we need
-var staticDir = baseDir + '/public';
-var viewsDir  = baseDir + '/views';
-var siteDir   = baseDir + '/site';
+var staticDir  = siteDir + '/public';
+var viewsDir   = siteDir + '/views';
+var contentDir = siteDir + '/content';
 
-console.log('Using base   = ' + baseDir);
-console.log('Using static = ' + staticDir);
-console.log('Using views  = ' + viewsDir);
-console.log('Using site   = ' + siteDir);
+console.log('Using site    = ' + siteDir);
+console.log('Using static  = ' + staticDir);
+console.log('Using views   = ' + viewsDir);
+console.log('Using content = ' + contentDir);
 
 // ----------------------------------------------------------------------------
 
-// specific routes
-app.get('/', function(req, res) {
-    res.set('Content-Type', 'text/plain');
-    res.send('Hello, World!');
-});
+// load up the marksmith info
+marksmith(contentDir, function(err, pages) {
+    if (err) throw err;
+    console.log(pages);
 
-// specific routes
-app.get('/', function(req, res) {
-    res.set('Content-Type', 'text/plain');
-    res.send('Hello, World!');
-});
+    // express
+    var app = express();
 
-app.get('/markdown', function(req, res) {
-    marked.setOptions({
-        gfm        : true,
-        tables     : true,
-        breaks     : false,
-        pedantic   : false,
-        sanitize   : true,
-        smartLists : true,
-        langPrefix : 'language-',
+    // some app settings
+    app.set('views', __dirname + '/' + viewsDir);
+    app.set('view engine', 'jade');
+
+    // see if this is a page we know about
+    app.use(function(req, res, next) {
+        console.log('url=' + req.path);
+        if ( pages[req.path] ) {
+            var page = pages[req.path];
+            if ( page.meta.type === 'post' ) {
+                return res.render('post', { meta : page.meta, content : page.content });
+            }
+            if ( page.meta.type === 'page' ) {
+                return res.render('page', { meta : page.meta, content : page.content });
+            }
+            if ( page.meta.type === 'index' ) {
+                return res.render('index', { meta : page.meta, content : page.content });
+            }
+        }
+        next();
     });
-    var html = marked('I am using __markdown__.');
-    res.send(html);
-});
 
-app.use(app.router);
+    // specific routes
+    app.get('/', function(req, res) {
+        res.set('Content-Type', 'text/plain');
+        res.send('Hello, World!');
+    });
 
-// ----------------------------------------------------------------------------
+    // specific routes
+    app.get('/', function(req, res) {
+        res.set('Content-Type', 'text/plain');
+        res.send('Hello, World!');
+    });
 
-var server = http.createServer(app);
-server.listen(port, function() {
-    console.log('Server listening on port ' + port);
+    app.use(app.router);
+
+    // start the server
+    var server = http.createServer(app);
+    server.listen(port, function() {
+        console.log('Server listening on port ' + port);
+    });
+
 });
 
 // ----------------------------------------------------------------------------

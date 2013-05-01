@@ -20,12 +20,12 @@ It's pretty easy. In your ```dir``` you need three other directories:
 
 ```
 dir/
-|- site/
+|- content/
 |- views/
 +- public/
 ```
 
-In ```site/``` goes your Markdown files and any ```.config.json``` files you require.
+In ```content/``` goes your Markdown files and any ```.config.json``` files you require.
 
 In ```views/``` goes your Jade templates. Remember to create at least one of each of the following:
 
