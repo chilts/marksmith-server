@@ -49,6 +49,17 @@ marksmith(contentDir, function(err, pages) {
     app.set('views', __dirname + '/' + viewsDir);
     app.set('view engine', 'jade');
 
+    // do all static routes first
+    app.use(express.favicon(staticDir + '/favicon.ico'));
+
+    if ( process.env.NODE_ENV === 'production' ) {
+        var oneMonth = 30 * 24 * 60 * 60 * 1000;
+        app.use(express.static(staticDir), { maxAge : oneMonth });
+    }
+    else {
+        app.use(express.static(staticDir));
+    }
+
     // see if this is a page we know about
     app.use(function(req, res, next) {
         console.log('url=' + req.path);
