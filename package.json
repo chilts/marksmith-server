@@ -9,7 +9,7 @@
         "tap" : "0.4.x"
     },
     "scripts" : {
-        "test" : "tap test/*.js"
+        "test" : "for FILE in `ls -1 test/*.js`; do echo $FILE; done"
     },
     "dependencies": {
         "express": "~3.2.0",
