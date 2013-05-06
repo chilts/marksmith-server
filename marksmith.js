@@ -82,6 +82,17 @@ marksmith(contentDir, function(err, pages) {
                 return res.redirect(page.meta.to);
             }
 
+            // if this is a redirect
+            if ( page.meta.type === 'redirect' ) {
+                return res.redirect(page.meta.to);
+            }
+
+            // if this page is already rendered
+            if ( page.meta.type === 'rendered' ) {
+                res.set('Content-Type', page.meta.contentType);
+                return res.send(page.content);
+            }
+
             // content: index and page
             if ( page.meta.type === 'index' ) {
                 return res.render('index', page);
@@ -90,6 +101,9 @@ marksmith(contentDir, function(err, pages) {
             // blog: index and post
             if ( page.meta.type === 'blog' ) {
                 return res.render('blog', page);
+            }
+            if ( page.meta.type === 'archive' ) {
+                return res.render('archive', page);
             }
             if ( page.meta.type === 'post' ) {
                 return res.render('post', page);
