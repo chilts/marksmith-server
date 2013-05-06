@@ -86,9 +86,6 @@ marksmith(contentDir, function(err, pages) {
             if ( page.meta.type === 'index' ) {
                 return res.render('index', page);
             }
-            if ( page.meta.type === 'page' ) {
-                return res.render('page', page);
-            }
 
             // blog: index and post
             if ( page.meta.type === 'blog' ) {
@@ -97,6 +94,9 @@ marksmith(contentDir, function(err, pages) {
             if ( page.meta.type === 'post' ) {
                 return res.render('post', page);
             }
+
+            // if we have no type so far, just default it to 'page'
+            return res.render('page', page);
         }
         next();
     });
