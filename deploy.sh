@@ -36,7 +36,7 @@ echo
 ## ----------------------------------------------------------------------------
 
 echo "Making the /etc/marksmith.d/ directory ..."
-sudo mkdir /etc/marksmith.d/
+sudo mkdir -p /etc/marksmith.d/
 echo
 
 ## ----------------------------------------------------------------------------
