@@ -12,11 +12,14 @@
         "test" : "for FILE in `ls -1 test/*.js`; do echo $FILE; done"
     },
     "dependencies": {
-        "express": "~3.2.0",
+        "send": "0.1.x",
         "jade": "*",
-        "marked": "~0.2.8",
-        "argh": "~0.0.0",
-        "fmt": "~0.4.0"
+        "marked": "0.2.x",
+        "data2xml": "0.8.x",
+        "log2": "0.1.x",
+        "iniparser": "1.0.x",
+        "async": "0.1.x",
+        "fmt": "0.4.x"
     },
 
     "homepage" : "https://chilts.org/",

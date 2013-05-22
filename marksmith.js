@@ -8,10 +8,14 @@
 
 // core
 var http = require('http');
+var fs = require('fs');
+var url = require('url');
 
 // npm
-var argh = require('argh');
-var express = require('express');
+var log2 = require('log2');
+var iniparser = require('iniparser');
+var async = require('async');
+var send = require('send');
 
 // local
 var marksmith = require('./lib/marksmith.js');
@@ -19,110 +23,189 @@ var marksmith = require('./lib/marksmith.js');
 // ----------------------------------------------------------------------------
 // some setup
 
-var args = argh.argv;
+var cfgFile = '/etc/marksmith.ini';
+var cfgDir = '/etc/marksmith.d';
 
-// incoming args: $ node app.js <directory> <port>
-var siteDir = args.dir.replace(/\/$/, '');
-var port    = args.port;
-
-// generate the other paths we need
-var staticDir  = siteDir + '/public';
-var viewsDir   = siteDir + '/views';
-var contentDir = siteDir + '/content';
-
-console.log('Using site    = ' + siteDir);
-console.log('Using static  = ' + staticDir);
-console.log('Using views   = ' + viewsDir);
-console.log('Using content = ' + contentDir);
+var cfg     = iniparser.parseSync(cfgFile);
+var port    = cfg.port;
+var oneMonth = 30 * 24 * 60 * 60 * 1000;
+var logfile = cfg.logfile;
+var stream  = logfile === 'stdout' ? process.stdout : fs.createWriteStream(logfile);
+var log     = log2({ stream : stream });
+log('Started');
 
 // ----------------------------------------------------------------------------
 
-// load up the marksmith info
-marksmith(contentDir, function(err, pages) {
-    if (err) throw err;
-    console.log(pages);
+// find all the files in /etc/proximity.d/
+var files = fs.readdirSync(cfgDir);
 
-    // express
-    var app = express();
+var site = {};
 
-    // some app settings
-    app.set('views', __dirname + '/' + viewsDir);
-    app.set('view engine', 'jade');
+async.forEachSeries(
+    files,
+    readSiteFiles,
+    startServer
+);
 
-    // do all static routes first
-    app.use(express.favicon(staticDir + '/favicon.ico'));
+function readSiteFiles(filename, done) {
+    log('Reading ' + cfgDir + '/' + filename);
 
-    if ( process.env.NODE_ENV === 'production' ) {
-        var oneMonth = 30 * 24 * 60 * 60 * 1000;
-        app.use(express.static(staticDir), { maxAge : oneMonth });
-    }
-    else {
-        app.use(express.static(staticDir));
-    }
+    // read the site info from the config file
+    var config = iniparser.parseSync(cfgDir + '/' + filename);
 
-    // see if this is a page we know about
-    app.use(function(req, res, next) {
-        console.log('url=' + req.path);
+    // now, load up the marksmith info for this site
+    marksmith(config.content, function(err, pages) {
+        if (err) throw err;
+        // console.log(pages);
 
-        var path = req.path;
-        if ( path.match(/\/index$/) ) {
-            path = path.replace(/\/index$/, '/');
+        // store these pages into this config
+        config.pages = pages;
+
+        // all done, store this entire site into the main config
+        log('Hostnames=' + config.hostnames);
+        config.hostnames.split(',').forEach(function(hostname) {
+            log('Hostname=' + hostname);
+            site[hostname] = config;
+        });
+
+        // ToDo: read all the Jade templates and compile them
+        // ...
+
+        done();
+    });
+}
+
+function startServer(err) {
+    var total = Object.keys(site).length;
+    log('Read ' + total + ' sites');
+
+    // create the server
+    var server = http.createServer();
+    server.on('request', function(req, res) {
+        var path = url.parse(req.url).pathname;
+
+        // firstly, get the host
+        var host = req.headers.host;
+        log('Got a request for ' + host);
+
+        // see if we are meant to serve this host
+        // console.log(site);
+        if ( !site[host] ) {
+            // 404
+            log('Unknown host ' + host);
+            res.statusCode = 404;
+            return res.end('404 - Not Found\r\n');
         }
 
-        console.log('path=' + path);
+        // ok, we're meant to serve this site
+        var thisSite = site[host];
 
-        if ( pages[path] ) {
-            var page = pages[path];
-            if ( !page.content ) {
-                page.content = '';
-            }
-
-            // if this is a redirect
-            if ( page.meta.type === 'redirect' ) {
-                return res.redirect(page.meta.to);
+        // ok, we're going to try one of the following things
+        // 1) a content route
+        // 2) a static file
+        serveContent(req, res, thisSite, path, function(err, done) {
+            if ( done ) {
+                return;
             }
 
-            // if this is a redirect
-            if ( page.meta.type === 'redirect' ) {
-                return res.redirect(page.meta.to);
-            }
-
-            // if this page is already rendered
-            if ( page.meta.type === 'rendered' ) {
-                res.set('Content-Type', page.meta.contentType);
-                return res.send(page.content);
-            }
-
-            // content: index and page
-            if ( page.meta.type === 'index' ) {
-                return res.render('index', page);
-            }
-
-            // blog: index and post
-            if ( page.meta.type === 'blog' ) {
-                return res.render('blog', page);
-            }
-            if ( page.meta.type === 'archive' ) {
-                return res.render('archive', page);
-            }
-            if ( page.meta.type === 'post' ) {
-                return res.render('post', page);
-            }
-
-            // if we have no type so far, just default it to 'page'
-            return res.render('page', page);
-        }
-        next();
+            // if this isn't content, then it might be a static file
+            serveStatic(req, res, thisSite, path, function(err, done) {
+                if ( done ) {
+                    log('A static file was served');
+                }
+                else {
+                    log('Not Found');
+                }
+            });
+        });
     });
 
-    app.use(app.router);
-
-    // start the server
-    var server = http.createServer(app);
     server.listen(port, function() {
         console.log('Server listening on port ' + port);
     });
+}
 
-});
+// if we call cb(err, true) then we have dealt with the request
+function serveContent(req, res, site, path, cb) {
+    //
+    var pages = site.pages;
 
-// ----------------------------------------------------------------------------
+    if ( !pages[path] ) {
+        // 404
+        log('Unknown path ' + path);
+        res.statusCode = 404;
+        return res.end('404 - Not Found\r\n');
+        return cb();
+    }
+
+    var page = pages[path];
+    if ( !page.content ) {
+        page.content = '';
+    }
+
+    // if this is a redirect
+    if ( page.meta.type === 'redirect' ) {
+        return res.redirect(page.meta.to);
+    }
+
+    // if this is a redirect
+    if ( page.meta.type === 'redirect' ) {
+        return res.redirect(page.meta.to);
+    }
+
+    // if this page is already rendered
+    if ( page.meta.type === 'rendered' ) {
+        res.set('Content-Type', page.meta.contentType);
+        return res.send(page.content);
+    }
+
+    // ToDo: all res.render() stuff needs to be like this instead:
+    // * https://github.com/visionmedia/serve/blob/master/bin/serve#L55
+
+    // content: index and page
+    if ( page.meta.type === 'index' ) {
+        return res.render('index', page);
+    }
+
+    // blog: index and post
+    if ( page.meta.type === 'blog' ) {
+        return res.render('blog', page);
+    }
+    if ( page.meta.type === 'archive' ) {
+        return res.render('archive', page);
+    }
+    if ( page.meta.type === 'post' ) {
+        return res.render('post', page);
+    }
+
+    // if we have no type so far, just default it to 'page'
+    return res.render('page', page);
+}
+
+// if we call cb(err, true) then we have dealt with the request
+function serveStatic(req, res, site, path, cb) {
+    // see if we want to serve something static
+    send(req, path)
+        .index(false)
+        .root(site.htdocs)
+        .on('error', function(err) {
+            // if this was a not-found, send it rather than a server error
+            res.statusCode = err.status || 500;
+            res.end(err.code === 'ENOENT' ? '404 - Not Found\r\n' : err.message);
+            cb();
+        })
+        .on('file', function(path, stat) {
+            log('wanting a file');
+        })
+        .on('end', function(path, stat) {
+            log('ended the streaming');
+        })
+        .on('directory', function() {
+            log('Doing a directory');
+            res.statusCode = 301;
+            res.setHeader('Location', req.url + '/');
+            res.end('Redirecting to ' + req.url + '/');
+        })
+        .pipe(res)
+    ;
+}
