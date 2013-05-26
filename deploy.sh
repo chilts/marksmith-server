@@ -47,6 +47,17 @@ echo
 ## ----------------------------------------------------------------------------
 
 # add the upstart scripts
+echo "Copying proximity.ini ..."
+m4 \
+    -D __USER__=$USER \
+    -D __NODE__=$NODE \
+    -D __PWD__=$PWD \
+    etc/marksmith.ini.m4 | sudo tee /etc/marksmith.ini
+echo
+
+## ----------------------------------------------------------------------------
+
+# add the upstart scripts
 echo "Copying upstart scripts ..."
 m4 \
     -D __USER__=$USER \
