@@ -175,7 +175,14 @@ function serveContent(req, res, site, path) {
         page.content = '';
     }
 
-    var type = page.meta.type;
+    // get the type (if there)
+    var type = page.meta && page.meta.type;
+
+    // if there is no type, then serve a 500 since we don't know what to do
+    if ( !type ) {
+        res.statusCode = 500;
+        res.end('500 - Internal Server Error');
+    }
 
     // if this is a redirect
     if ( type === 'redirect' ) {
