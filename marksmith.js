@@ -56,9 +56,8 @@ async.series([
     function(done) {
         log('Compiling all templates ...');
 
-        console.log(site);
         Object.keys(site).forEach(function(siteName) {
-            log('  site = ' + siteName);
+            log('* site = ' + siteName);
             var thisSite = site[siteName];
             var pageNames = Object.keys(thisSite.pages);
 
@@ -73,7 +72,7 @@ async.series([
 
                 var type = page.meta.type;
 
-                // if this page is already rendered, skip it
+                // if this page is already rendered
                 if ( type === 'rendered' || type === 'redirect' ) {
                     return;
                 }
@@ -83,7 +82,7 @@ async.series([
                     return;
                 }
 
-                console.log('-> ' + type);
+                log('-> ' + type);
 
                 // read this template in
                 var filename = thisSite.views + '/' + type + '.jade';
@@ -107,7 +106,6 @@ function readSiteFiles(filename, done) {
     // now, load up the marksmith info for this site
     marksmith(config.content, function(err, pages) {
         if (err) throw err;
-        // console.log(pages);
 
         // store these pages into this config
         config.pages = pages;
@@ -163,7 +161,7 @@ function startServer(done) {
     });
 
     server.listen(port, function() {
-        console.log('Server listening on port ' + port);
+        log('Server listening on port ' + port);
     });
 }
 
@@ -197,12 +195,16 @@ function serveContent(req, res, site, path) {
         return;
     }
 
-    // this should be a page with a view
+    // if this page is of type 'jade', then render it
+    if ( type === 'blog' || type === 'post' || type === 'page'  || type === 'index' ) {
+        var html = site.template[type](page);
+        res.setHeader('Content-Type', 'text/html');
+        res.end(html);
+        return;
+    }
 
-    // content: index and page
-    var html = site.template[type](page);
-    res.setHeader('Content-Type', 'text/html');
-    res.end(html);
+    // don't know what this is, or whether we ever get here
+    throw new Error("Unknown page type : " + type);
 }
 
 // if we call cb(err, true) then we have dealt with the request
