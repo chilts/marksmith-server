@@ -1,7 +1,5 @@
 # Marksmith #
 
-Note: "Marksmith" is a cross between "MarkDown" and "Wordsmith" (not "Mark Smith").
-
 ## What is it? ##
 
 Marksmith is a server which can look at a directory full of markdown files, assets and templates and serve them up on
@@ -35,6 +33,11 @@ In ```views/``` goes your Jade templates. Remember to create at least one of eac
 
 In ```public/``` goes your static assets such as your JavaScript, CSS and images. Remember to minimise them using
 something like [CSS Minifier](http://cssminifier.com/) and [JavaScript Minifier](http://javascript-minifier.com/).
+
+# About the Name #
+
+"Marksmith" is a cross between "MarkDown" and "Wordsmith" (not "Mark Smith"). It takes Node's tradition of using *smith
+as names for static site generators.
 
 # Author #
 
