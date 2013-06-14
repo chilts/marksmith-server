@@ -17,9 +17,7 @@ var iniparser = require('iniparser');
 var async = require('async');
 var send = require('send');
 var jade = require('jade');
-
-// local
-var marksmith = require('./lib/marksmith.js');
+var marksmith = require('marksmith');
 
 // ----------------------------------------------------------------------------
 // some setup
@@ -102,24 +100,32 @@ function readSiteFiles(filename, done) {
 
     // read the site info from the config file
     var config = iniparser.parseSync(cfgDir + '/' + filename);
+    config.hostnames = config.hostnames.split(',');
+
+    var plugins = [];
+    if ( config.plugins ) {
+        plugins = config.plugins.split(',');
+    }
+    log('Hostnames : ' + JSON.stringify(config.hostnames));
+    log('Content   : ' + JSON.stringify(config.content));
+    log('Htdocs    : ' + JSON.stringify(config.htdocs));
+    log('Views     : ' + JSON.stringify(config.views));
+    log('Plugins   : ' + JSON.stringify(plugins));
 
     // now, load up the marksmith info for this site
-    marksmith(config.content, function(err, pages) {
+    marksmith(config.content, plugins, console.log, function(err, pages) {
         if (err) throw err;
 
         // store these pages into this config
         config.pages = pages;
 
+        console.log(pages['/blog/rss.xml']);
+
         // all done, store this entire site into the main config
-        log('Hostnames=' + config.hostnames);
-        config.hostnames.split(',').forEach(function(hostname) {
+        config.hostnames.forEach(function(hostname) {
             log('Hostname=' + hostname);
             site[hostname] = config;
         });
-
-        // ToDo: read all the Jade templates and compile them
-
-        // ...
 
         done();
     });

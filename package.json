@@ -15,6 +15,7 @@
         "send": "0.1.x",
         "jade": "*",
         "marked": "0.2.x",
+        "marksmith": "*",
         "textfile-js": "0.1.x",
         "data2xml": "0.8.x",
         "log2": "0.1.x",
