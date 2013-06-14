@@ -1,38 +1,51 @@
-# Marksmith #
+# Marksmith Server #
 
 ## What is it? ##
 
 Marksmith is a server which can look at a directory full of markdown files, assets and templates and serve them up on
-the port of your choosing.
+the port of your choosing. It uses the ```marksmith``` module to convert a directory into a data structure, which this
+server can serve up in conjunction with a directory of templates and a directory of static assets.
 
-e.g.
+## Sites ##
 
-```bash
-$ node marksmith.js --dir path/to/site --port 3000
-Server listening on port 3000
-```
-
-## Directory Layout ##
-
-It's pretty easy. In your ```dir``` you need three other directories:
+To tell Marksmith Server to serve a site, you need to drop a file into ```/etc/marksmith.d/``` which points to the
+correct locations. For example ```/etc/marksmith.d/chilts-org.ini``` might look like:
 
 ```
-dir/
-|- content/
-|- views/
-+- public/
+hostnames=chilts.org
+content=/home/chilts/src/chilts-org/content
+htdocs=/home/chilts/src/chilts-org/public
+views=/home/chilts/src/chilts-org/views
+plugins=...,...,...
 ```
 
-In ```content/``` goes your Markdown files and any ```.config.json``` files you require.
+(We'll talk about plugins later.)
 
-In ```views/``` goes your Jade templates. Remember to create at least one of each of the following:
+This will use [marksmith](https://github.com/chilts/marksmith) to read in all of the content in the ```content```
+directory. It will serve any static assets from the ```htdocs``` directory and will use all the templates in
+```views``` to render any pages needing a template.
 
-* post.jade
-* index.jade
-* archive.jade
+## Use in conjunction with Proximity ##
 
-In ```public/``` goes your static assets such as your JavaScript, CSS and images. Remember to minimise them using
-something like [CSS Minifier](http://cssminifier.com/) and [JavaScript Minifier](http://javascript-minifier.com/).
+Use Marksmith Server in conjunction with Proximity so that Proximity will proxy all requests through to Marksmith
+Server for the site you have created. For example, by dropping the following file into
+```/etc/proximity.d/chilts-org```, you'll tell Proximity to proxy through to Marksmith Server, which already knows how
+to serve ```chilts.org```:
+
+```
+; proxy to Marksmith
+[chilts.org]
+type=proxy
+host=localhost
+port=5000
+
+[www.chilts.org]
+type=redirect
+to=chilts.org
+```
+
+Proximity also takes care of sitewide redirects too, as you can see here where ```www.chilts.org``` is being redirected
+to ```chilts.org```.
 
 # About the Name #
 
