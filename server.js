@@ -98,6 +98,11 @@ async.series([
 function readSiteFiles(filename, done) {
     log('Reading ' + cfgDir + '/' + filename);
 
+    var stat = fs.statSync(cfgDir + '/' + filename);
+    if ( stat.isDirectory() ) {
+        return done();
+    }
+
     // read the site info from the config file
     var config = iniparser.parseSync(cfgDir + '/' + filename);
     config.hostnames = config.hostnames.split(',');
