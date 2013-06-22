@@ -32,7 +32,7 @@ script
     exec \
         sudo -E -u __USER__ \
         __NODE__ \
-        __PWD__/marksmith.js 9000 \
+        __PWD__/server.js 9000 \
         >> /var/log/marksmith/access.log
 
 end script
