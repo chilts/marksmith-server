@@ -35,7 +35,7 @@ log('Started');
 
 // ----------------------------------------------------------------------------
 
-// find all the files in /etc/proximity.d/
+// find all the files in /etc/marksmith.d/
 var files = fs.readdirSync(cfgDir);
 
 var site = {};
@@ -105,7 +105,13 @@ function readSiteFiles(filename, done) {
 
     // read the site info from the config file
     var config = iniparser.parseSync(cfgDir + '/' + filename);
-    config.hostnames = config.hostnames.split(',');
+    if ( config.hostnames ) {
+        config.hostnames = config.hostnames.split(',');
+    }
+    else {
+        console.warn('Not config.hostnames given for this filename : ' + filename);
+        return done('No config.hostnames for this filename : ' + filename);
+    }
 
     var plugins = [];
     if ( config.plugins ) {
